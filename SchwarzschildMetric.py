@@ -20,7 +20,7 @@ year = 365 * day
 
 
 def main():
-    integrate_geodesic_forward(5*minute, 0.5*year)
+    integrate_geodesic_forward(5 * minute, 0.5 * year)
     # heatmap_of_ricci_scalar()
 
 
@@ -31,7 +31,7 @@ def heatmap_of_ricci_scalar():
     n = 10
     m = 30
     rs = np.linspace(3e4, 2e7, m)
-    thetas = np.linspace(0, 2*np.pi, n)
+    thetas = np.linspace(0, 2 * np.pi, n)
     r_grid, theta_grid = np.meshgrid(rs, thetas)
 
     z = np.zeros((n, m))
@@ -41,7 +41,7 @@ def heatmap_of_ricci_scalar():
     for r_idx in range(rs.shape[0]):
         for theta_idx in range(thetas.shape[0]):
             x = torch.tensor([0.0, rs[r_idx], thetas[theta_idx]], requires_grad=True)
-            z[theta_idx][r_idx] = ricci_scalar_fn(x).detach().numpy()*1e18
+            z[theta_idx][r_idx] = ricci_scalar_fn(x).detach().numpy() * 1e18
 
     plt.subplot(projection="polar")
     plt.pcolormesh(theta_grid, r_grid, z)
@@ -52,8 +52,8 @@ def heatmap_of_ricci_scalar():
 
 
 def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
-    x0 = torch.zeros(3, requires_grad=True)
-    v0 = torch.zeros(3, requires_grad=True)
+    x0 = torch.zeros(3, requires_grad=False)
+    v0 = torch.zeros(3, requires_grad=False)
 
     # # Earth Aphelion (m)
     # r_aphelion = 1.521e11
@@ -67,11 +67,13 @@ def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
     x0[1] = r_aphelion
     v0[0] = c
     v_aphelion = 3.886e4
-    v0[2] = v_aphelion/r_aphelion
+    v0[2] = v_aphelion / r_aphelion
 
     print(
-        f"Mercury Orbit GR Simulation",
-        f"Aphelion start: {r_aphelion/1e10}e10 km"
+        "\n".join([
+            f"Mercury Orbit GR Simulation\n",
+            f"Aphelion start: {r_aphelion / 1e10}e10 km"
+        ])
     )
 
     dvec_dtau_fn = get_dvec_dtau_fn(schwarzschild_metric_fn)
@@ -81,7 +83,7 @@ def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
     position_plotter = Plotter("Position", X[::num_iters_between_plot], r"$\tau$")
     velocity_plotter = Plotter("Velocity", X[::num_iters_between_plot], r"$\tau$")
 
-    ts, rs, thetas = [], [], []
+    vs, ts, rs, thetas = [], [], [], []
 
     x = x0.clone()
     v = v0.clone()
@@ -93,11 +95,12 @@ def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
         x = (x + v * dtau).detach()
 
         t = float(x[0].detach().numpy())
-        r = float(x[1].detach().numpy())/1e10 # r is scaled to plot nicely with theta
+        r = float(x[1].detach().numpy()) / 1e10  # r is scaled to plot nicely with theta
         theta = float(x[2].detach().numpy()) % (2 * np.pi)
 
         if i % num_iters_between_plot == 0:
             # print("\r{tau / tau_final}")
+            vs.append(v)
             ts.append(t)
             rs.append(r)
             thetas.append(theta)
@@ -107,7 +110,7 @@ def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
             position_plotter.record(r"$\theta$", theta)
 
             # velocity_plotter.record(r"$v^{t}$", v[0].detach().numpy())
-            velocity_plotter.record(r"$v^{r}$", v[1].detach().numpy()/1e8)
+            velocity_plotter.record(r"$v^{r}$", v[1].detach().numpy() / 1e8)
             velocity_plotter.record(r"$v^{\theta}$", v[2].detach().numpy())
 
     dur = time.time() - start
@@ -118,9 +121,12 @@ def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
 
     plt.figure()
     plt.polar(thetas, rs)
-    print(
-        f"Perihelion (Computed): {min(rs)}e10 km"
-    )
+    print("\n".join([
+        f"Simulation results: "
+        f"- Perihelion: {min(rs)}e10 km",
+        f"- Max velocity reached: {max(vs)} km/s",
+        f"- Min velocity reached: {min(vs)} km/s"
+    ]))
 
     plt.show()
 
