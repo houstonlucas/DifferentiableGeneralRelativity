@@ -1,19 +1,9 @@
 # DifferentiableGeneralRelativity
 A differentiable pyTorch implementation of general relativity.
 
+My [notes](https://www.mathcha.io/editor/KXODF6wfm3Twx9OepC64ElQCW8jWvptKepN13) on GR from [Science Clic's videos](https://www.youtube.com/watch?v=xodtfM1r9FA&list=PLu7cY2CPiRjVY-VaUZ69bXHZr5QslKbzo).
+
 <h1>Mercury Example</h1>
-
-```
-Mercury Orbit GR Simulation
-
-Aphelion start: 6.9821e10 m
-Simulation Took 218.11 secconds.
-Simulation results: - Perihelion: 4.598e10 m
-- Max radial velocity reached: 1.011 1e4 m/s
-- Min radial velocity reached: -1.009 1e4 m/s
-- Max angular velocity reached: 1.283 1e-6 rad/s
-- Min angular velocity reached: 0.555 1e-6 rad/s
-```
 
 <h2>Coordinates vs Time</h2>
 
