@@ -285,10 +285,11 @@ def grad_fn(f):
 
 
 class Plotter:
-    def __init__(self, title, X, X_name):
+    def __init__(self, title, X, X_name="", Y_name=""):
         self.title = title
         self.X = X
         self.X_name = X_name
+        self.Y_name = Y_name
         self.values_to_plot = {}
 
     def record(self, name, value):
@@ -305,6 +306,7 @@ class Plotter:
         # plt.axvline(x=0, color='k')
         # plt.axhline(y=0, color='k')
         plt.xlabel(self.X_name)
+        plt.ylabel(self.Y_name)
         plt.title(self.title)
         plt.show()
 

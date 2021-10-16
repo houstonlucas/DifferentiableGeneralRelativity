@@ -20,7 +20,7 @@ year = 365 * day
 
 
 def main():
-    integrate_geodesic_forward(5 * minute, 0.5 * year)
+    integrate_geodesic_forward(dtau=5 * minute, tau_final=0.5 * year)
     # heatmap_of_ricci_scalar()
 
 
@@ -51,7 +51,7 @@ def heatmap_of_ricci_scalar():
     plt.show()
 
 
-def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
+def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=100):
     x0 = torch.zeros(3, requires_grad=False)
     v0 = torch.zeros(3, requires_grad=False)
 
@@ -72,7 +72,7 @@ def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
     print(
         "\n".join([
             f"Mercury Orbit GR Simulation\n",
-            f"Aphelion start: {r_aphelion / 1e10}e10 km"
+            f"Aphelion start: {r_aphelion / 1e10:.3f}1e10 m"
         ])
     )
 
@@ -80,14 +80,16 @@ def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
 
     tau_range = torch.arange(0.0, tau_final, dtau, dtype=f64)
     X = tau_range.detach().numpy()
-    position_plotter = Plotter("Position", X[::num_iters_between_plot], r"$\tau$")
-    velocity_plotter = Plotter("Velocity", X[::num_iters_between_plot], r"$\tau$")
+    position_plotter = Plotter("Position", X[::num_iters_between_plot], X_name=r"$\tau$", Y_name=r"$r$, $\theta$")
+    velocity_plotter = Plotter("Velocity", X[::num_iters_between_plot], X_name=r"$\tau$", Y_name=r"$v^{r}$, $v^{\theta}$")
 
-    vs, ts, rs, thetas = [], [], [], []
+    ts, rs, thetas = [], [], []
+    drdtaus, dthetadtaus = [], []
 
     x = x0.clone()
     v = v0.clone()
 
+    # TODO: Use https://github.com/rtqichen/torchdiffeq for integrating forward
     start = time.time()
     for i, tau in enumerate(tau_range):
         dvdtau = dvec_dtau_fn(x.detach().requires_grad_(True), v.detach())
@@ -100,34 +102,37 @@ def integrate_geodesic_forward(dtau, tau_final, num_iters_between_plot=1000):
 
         if i % num_iters_between_plot == 0:
             # print("\r{tau / tau_final}")
-            vs.append(v)
+            drdtaus.append(v[1]/1e4)
+            dthetadtaus.append(v[2]*1e6)
             ts.append(t)
             rs.append(r)
             thetas.append(theta)
 
             # position_plotter.record(r"$t$", t)
-            position_plotter.record(r"$r$", r)
-            position_plotter.record(r"$\theta$", theta)
+            position_plotter.record(r"$r$ 1e10 m", r)
+            position_plotter.record(r"$\theta$ Rad", theta)
 
             # velocity_plotter.record(r"$v^{t}$", v[0].detach().numpy())
-            velocity_plotter.record(r"$v^{r}$", v[1].detach().numpy() / 1e8)
-            velocity_plotter.record(r"$v^{\theta}$", v[2].detach().numpy())
+            velocity_plotter.record(r"$v^{r}$ 1e4 m", v[1].detach().numpy() / 1e4)
+            velocity_plotter.record(r"$v^{\theta}$ 1e-6 Rad/s", v[2].detach().numpy() * 1e6)
 
     dur = time.time() - start
     print(f"Simulation Took {dur:.2f} secconds.")
+    print("\n".join([
+        f"Simulation results: "
+        f"- Perihelion: {min(rs):.3f}e10 m",
+        f"- Max radial velocity reached: {max(drdtaus):.3f} 1e4 m/s",
+        f"- Min radial velocity reached: {min(drdtaus):.3f} 1e4 m/s",
+        f"- Max angular velocity reached: {max(dthetadtaus):.3f} 1e-6 rad/s",
+        f"- Min angular velocity reached: {min(dthetadtaus):.3f} 1e-6 rad/s"
+    ]))
 
     position_plotter.plot()
     velocity_plotter.plot()
 
     plt.figure()
     plt.polar(thetas, rs)
-    print("\n".join([
-        f"Simulation results: "
-        f"- Perihelion: {min(rs)}e10 km",
-        f"- Max velocity reached: {max(vs)} km/s",
-        f"- Min velocity reached: {min(vs)} km/s"
-    ]))
-
+    plt.xlabel("Radial units 1e10 m")
     plt.show()
 
 
